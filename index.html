@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Juwon Cha — Game Client Developer / Wiggle Defender</title>
+<meta name="description" content="차주원 · Wiggle Defender 클라이언트 개발자 포트폴리오 — 비동기 PvP, 시즌/이벤트 메타, 라이브 대응, 성능 최적화" />
+<style>
+  /* ============ TOKENS ============ */
+  :root {
+    --ground: #0b0f14;
+    --surface: #121820;
+    --surface-2: #19212d;
+    --surface-3: #212b39;
+    --line: rgba(126,164,204,0.14);
+    --line-strong: rgba(126,164,204,0.28);
+    --ink: #e7eef5;
+    --ink-dim: #9db0c2;
+    --ink-faint: #67788a;
+    --accent: #f5b642;
+    --accent-bright: #ffc95c;
+    --accent-soft: rgba(245,182,66,0.12);
+    --cyan: #43d9c4;
+    --cyan-soft: rgba(67,217,196,0.12);
+    --good: #5fd88a;
+    --crit: #f47272;
+    --shadow: 0 24px 60px -28px rgba(0,0,0,0.7);
+
+    --font-display: "Helvetica Neue", "Segoe UI", system-ui, -apple-system, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+    --font-body: -apple-system, "Segoe UI", system-ui, Roboto, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+    --font-mono: "SF Mono", "JetBrains Mono", "Fira Code", ui-monospace, Menlo, Consolas, monospace;
+
+    --maxw: 1120px;
+    --pad: clamp(20px, 5vw, 64px);
+  }
+  @media (prefers-color-scheme: light) {
+    :root {
+      --ground: #e9edf2;
+      --surface: #ffffff;
+      --surface-2: #f3f6fa;
+      --surface-3: #eaeff5;
+      --line: rgba(30,52,74,0.12);
+      --line-strong: rgba(30,52,74,0.24);
+      --ink: #101821;
+      --ink-dim: #45596b;
+      --ink-faint: #798a99;
+      --accent: #b57611;
+      --accent-bright: #cd8a1c;
+      --accent-soft: rgba(181,118,17,0.12);
+      --cyan: #0c8e7d;
+      --cyan-soft: rgba(12,142,125,0.12);
+      --good: #1f9d54;
+      --crit: #cf3b3b;
+      --shadow: 0 24px 50px -30px rgba(30,52,74,0.35);
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #0b0f14; --surface: #121820; --surface-2: #19212d; --surface-3: #212b39;
+    --line: rgba(126,164,204,0.14); --line-strong: rgba(126,164,204,0.28);
+    --ink: #e7eef5; --ink-dim: #9db0c2; --ink-faint: #67788a;
+    --accent: #f5b642; --accent-bright: #ffc95c; --accent-soft: rgba(245,182,66,0.12);
+    --cyan: #43d9c4; --cyan-soft: rgba(67,217,196,0.12);
+    --good: #5fd88a; --crit: #f47272;
+    --shadow: 0 24px 60px -28px rgba(0,0,0,0.7);
+  }
+  :root[data-theme="light"] {
+    --ground: #e9edf2; --surface: #ffffff; --surface-2: #f3f6fa; --surface-3: #eaeff5;
+    --line: rgba(30,52,74,0.12); --line-strong: rgba(30,52,74,0.24);
+    --ink: #101821; --ink-dim: #45596b; --ink-faint: #798a99;
+    --accent: #b57611; --accent-bright: #cd8a1c; --accent-soft: rgba(181,118,17,0.12);
+    --cyan: #0c8e7d; --cyan-soft: rgba(12,142,125,0.12);
+    --good: #1f9d54; --crit: #cf3b3b;
+    --shadow: 0 24px 50px -30px rgba(30,52,74,0.35);
+  }
+
+  /* ============ RESET / BASE ============ */
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--font-body);
+    line-height: 1.6;
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+  a { color: inherit; text-decoration: none; }
+  ::selection { background: var(--accent); color: var(--ground); }
+
+  .wrap { max-width: var(--maxw); margin: 0 auto; padding-left: var(--pad); padding-right: var(--pad); }
+
+  .mono { font-family: var(--font-mono); }
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--accent);
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .eyebrow::before {
+    content: "";
+    width: 22px; height: 1px;
+    background: var(--accent);
+    display: inline-block;
+  }
+
+  /* ============ HEADER ============ */
+  header.topbar {
+    position: sticky; top: 0; z-index: 50;
+    backdrop-filter: blur(12px);
+    background: color-mix(in srgb, var(--ground) 78%, transparent);
+    border-bottom: 1px solid var(--line);
+  }
+  .topbar .wrap { display: flex; align-items: center; justify-content: space-between; height: 60px; }
+  .brand { font-family: var(--font-mono); font-size: 13px; letter-spacing: 0.14em; display: flex; align-items: center; gap: 10px; }
+  .brand .dot { width: 8px; height: 8px; border-radius: 2px; background: var(--accent); box-shadow: 0 0 12px var(--accent); }
+  .brand b { font-weight: 700; }
+  .brand span { color: var(--ink-faint); }
+  .topnav { display: flex; gap: 26px; align-items: center; }
+  .topnav a { font-family: var(--font-mono); font-size: 12.5px; letter-spacing: 0.05em; color: var(--ink-dim); transition: color .18s; }
+  .topnav a:hover { color: var(--ink); }
+  .theme-btn {
+    font-family: var(--font-mono); font-size: 12px; letter-spacing: .08em;
+    background: transparent; color: var(--ink-dim); border: 1px solid var(--line-strong);
+    padding: 6px 11px; border-radius: 7px; cursor: pointer; transition: all .18s;
+  }
+  .theme-btn:hover { color: var(--ink); border-color: var(--accent); }
+  @media (max-width: 720px) { .topnav a:not(.theme-btn) { display: none; } }
+
+  /* ============ HERO ============ */
+  .hero { position: relative; padding-top: clamp(70px, 12vh, 130px); padding-bottom: clamp(60px, 10vh, 110px); overflow: hidden; }
+  #heroCanvas { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 0; opacity: .9; }
+  .hero .wrap { position: relative; z-index: 2; }
+  .hero-grid-fade { position: absolute; inset: 0; z-index: 1; pointer-events: none;
+    background: radial-gradient(120% 90% at 15% 10%, transparent 40%, var(--ground) 92%); }
+
+  .reticle { position: relative; }
+  .reticle::before, .reticle::after {
+    content: ""; position: absolute; width: 18px; height: 18px; pointer-events: none;
+  }
+  .reticle::before { top: -10px; left: -10px; border-top: 2px solid var(--accent); border-left: 2px solid var(--accent); }
+  .reticle::after { bottom: -10px; right: -10px; border-bottom: 2px solid var(--accent); border-right: 2px solid var(--accent); }
+
+  .hero-inner { max-width: 780px; }
+  .namemark {
+    margin-top: 22px;
+    font-family: var(--font-mono); font-size: 14px; letter-spacing: 0.18em;
+    color: var(--ink); text-transform: uppercase;
+  }
+  .hero h1 {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: clamp(34px, 6.2vw, 64px);
+    line-height: 1.04;
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+    margin: 18px 0 24px;
+  }
+  .hero h1 .hl { color: var(--accent); }
+  .hero .lead { font-size: clamp(16px, 2vw, 19px); color: var(--ink-dim); max-width: 60ch; line-height: 1.7; }
+  .hero-meta { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 30px; }
+  .chip {
+    font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.04em;
+    padding: 7px 13px; border-radius: 999px; border: 1px solid var(--line-strong);
+    color: var(--ink-dim); background: var(--surface); display: inline-flex; align-items: center; gap: 8px;
+  }
+  .chip .k { color: var(--accent); }
+  .hero-cta { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 36px; }
+  .btn {
+    font-family: var(--font-mono); font-size: 13px; letter-spacing: 0.06em;
+    padding: 13px 22px; border-radius: 9px; cursor: pointer; transition: all .2s;
+    display: inline-flex; align-items: center; gap: 9px; border: 1px solid transparent;
+  }
+  .btn-primary { background: var(--accent); color: #14100a; font-weight: 700; }
+  .btn-primary:hover { background: var(--accent-bright); transform: translateY(-2px); }
+  .btn-ghost { border-color: var(--line-strong); color: var(--ink); }
+  .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* ============ SECTION SHELL ============ */
+  section { padding: clamp(56px, 9vh, 100px) 0; position: relative; }
+  .sec-head { display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap; margin-bottom: 42px; }
+  .sec-head h2 {
+    font-family: var(--font-display); font-weight: 800;
+    font-size: clamp(24px, 3.6vw, 36px); letter-spacing: -0.015em; text-wrap: balance;
+  }
+  .sec-head .idx { font-family: var(--font-mono); font-size: 13px; color: var(--ink-faint); letter-spacing: 0.1em; }
+  .sec-sub { color: var(--ink-dim); max-width: 62ch; margin-top: -26px; margin-bottom: 40px; }
+
+  .divider { height: 1px; background: var(--line); }
+
+  /* ============ STATS ============ */
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+  .stat { background: var(--surface); padding: 26px 22px; }
+  .stat .num { font-family: var(--font-mono); font-weight: 700; font-size: clamp(28px, 4vw, 42px); color: var(--ink); font-variant-numeric: tabular-nums; letter-spacing: -0.01em; line-height: 1; }
+  .stat .num .suf { color: var(--accent); font-size: 0.5em; margin-left: 3px; }
+  .stat .lbl { font-family: var(--font-mono); font-size: 11.5px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-faint); margin-top: 12px; }
+  @media (max-width: 760px) { .stats { grid-template-columns: repeat(2, 1fr); } }
+
+  /* ============ FEATURED ============ */
+  .featured {
+    background: linear-gradient(160deg, var(--surface-2), var(--surface));
+    border: 1px solid var(--line-strong);
+    border-radius: 18px; padding: clamp(26px, 4vw, 48px);
+    box-shadow: var(--shadow); position: relative; overflow: hidden;
+  }
+  .featured::before {
+    content: ""; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    background: linear-gradient(90deg, var(--accent), var(--cyan));
+  }
+  .feat-tag { font-family: var(--font-mono); font-size: 11.5px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--cyan); }
+  .featured h3 { font-family: var(--font-display); font-weight: 800; font-size: clamp(26px, 4vw, 40px); margin: 14px 0 6px; letter-spacing: -0.02em; }
+  .featured .subtitle { color: var(--ink-dim); font-size: 17px; }
+  .feat-body { color: var(--ink-dim); margin: 22px 0 30px; max-width: 68ch; line-height: 1.75; }
+  .feat-cols { display: grid; grid-template-columns: 1.1fr 1fr; gap: 34px; }
+  @media (max-width: 820px) { .feat-cols { grid-template-columns: 1fr; gap: 26px; } }
+  .feat-list { list-style: none; display: flex; flex-direction: column; gap: 14px; }
+  .feat-list li { display: flex; gap: 12px; font-size: 14.5px; color: var(--ink-dim); line-height: 1.5; }
+  .feat-list li .m { font-family: var(--font-mono); color: var(--accent); flex-shrink: 0; font-size: 13px; padding-top: 1px; }
+  .feat-list b { color: var(--ink); font-weight: 600; }
+  .feat-metrics { display: grid; grid-template-columns: repeat(2,1fr); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; align-self: start; }
+  .fm { background: var(--surface); padding: 18px; }
+  .fm .n { font-family: var(--font-mono); font-weight: 700; font-size: 24px; color: var(--accent); font-variant-numeric: tabular-nums; }
+  .fm .l { font-size: 12px; color: var(--ink-faint); margin-top: 6px; }
+
+  /* ============ SYSTEMS GRID ============ */
+  .grid-sys { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+  @media (max-width: 900px) { .grid-sys { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 560px) { .grid-sys { grid-template-columns: 1fr; } }
+  .card {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 14px;
+    padding: 24px 22px; transition: transform .22s, border-color .22s, background .22s;
+    position: relative; overflow: hidden;
+  }
+  .card:hover { transform: translateY(-4px); border-color: var(--accent); background: var(--surface-2); }
+  .card .sysid { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.12em; color: var(--ink-faint); }
+  .card h4 { font-family: var(--font-display); font-weight: 700; font-size: 18.5px; margin: 12px 0 8px; letter-spacing: -0.01em; }
+  .card p { font-size: 13.8px; color: var(--ink-dim); line-height: 1.6; }
+  .card .tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 16px; }
+  .card .tags span { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.04em; color: var(--ink-dim); border: 1px solid var(--line); border-radius: 6px; padding: 3px 8px; }
+  .card .scope { position: absolute; top: 20px; right: 20px; font-family: var(--font-mono); font-size: 11px; color: var(--cyan); }
+  .card .scope b { font-size: 15px; }
+
+  /* ============ CRAFT ============ */
+  .craft { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+  @media (max-width: 860px) { .craft { grid-template-columns: 1fr; } }
+  .craft-col { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 26px 24px; }
+  .craft-col h4 { font-family: var(--font-display); font-weight: 700; font-size: 19px; margin-bottom: 6px; display: flex; align-items: center; gap: 10px; }
+  .craft-col h4 .tick { width: 9px; height: 9px; background: var(--cyan); border-radius: 2px; }
+  .craft-col .kick { font-family: var(--font-mono); font-size: 11.5px; color: var(--ink-faint); letter-spacing: 0.08em; margin-bottom: 18px; }
+  .craft-col ul { list-style: none; display: flex; flex-direction: column; gap: 13px; }
+  .craft-col li { font-size: 14px; color: var(--ink-dim); line-height: 1.55; padding-left: 18px; position: relative; }
+  .craft-col li::before { content: ""; position: absolute; left: 0; top: 9px; width: 6px; height: 6px; background: var(--accent); border-radius: 50%; }
+  .craft-col li code { font-family: var(--font-mono); font-size: 12.2px; color: var(--ink); background: var(--surface-3); padding: 1px 6px; border-radius: 5px; }
+
+  /* ============ ACTIVITY ============ */
+  .activity { display: grid; grid-template-columns: 1.3fr 1fr; gap: 34px; align-items: stretch; }
+  @media (max-width: 820px) { .activity { grid-template-columns: 1fr; } }
+  .chart-panel { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 26px 24px; }
+  .chart-panel .cap { font-family: var(--font-mono); font-size: 11.5px; letter-spacing: 0.1em; color: var(--ink-faint); text-transform: uppercase; margin-bottom: 22px; display: flex; justify-content: space-between; }
+  .bars { display: flex; align-items: flex-end; gap: 10px; height: 180px; }
+  .bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 8px; height: 100%; justify-content: flex-end; }
+  .bar { width: 100%; max-width: 42px; border-radius: 5px 5px 2px 2px; background: linear-gradient(180deg, var(--accent), var(--accent-soft)); position: relative; transition: height 1s cubic-bezier(.2,.7,.3,1); }
+  .bar-col .v { font-family: var(--font-mono); font-size: 11px; color: var(--ink-dim); font-variant-numeric: tabular-nums; }
+  .bar-col .mo { font-family: var(--font-mono); font-size: 10.5px; color: var(--ink-faint); }
+
+  .breakdown { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 26px 24px; display: flex; flex-direction: column; gap: 16px; }
+  .breakdown .cap { font-family: var(--font-mono); font-size: 11.5px; letter-spacing: 0.1em; color: var(--ink-faint); text-transform: uppercase; }
+  .bd-row { display: grid; grid-template-columns: 76px 1fr 48px; gap: 12px; align-items: center; }
+  .bd-row .t { font-family: var(--font-mono); font-size: 12.5px; color: var(--ink); }
+  .bd-row .track { height: 8px; background: var(--surface-3); border-radius: 999px; overflow: hidden; }
+  .bd-row .fill { height: 100%; border-radius: 999px; width: 0; transition: width 1.1s cubic-bezier(.2,.7,.3,1); }
+  .bd-row .c { font-family: var(--font-mono); font-size: 12.5px; color: var(--ink-dim); text-align: right; font-variant-numeric: tabular-nums; }
+
+  /* ============ STACK ============ */
+  .stack-grid { display: flex; flex-wrap: wrap; gap: 10px; }
+  .stack-grid .s {
+    font-family: var(--font-mono); font-size: 13px; letter-spacing: 0.02em;
+    padding: 10px 16px; border: 1px solid var(--line-strong); border-radius: 9px;
+    color: var(--ink-dim); background: var(--surface); transition: all .18s;
+  }
+  .stack-grid .s:hover { border-color: var(--cyan); color: var(--ink); }
+  .stack-grid .s b { color: var(--accent); font-weight: 400; }
+
+  /* ============ CONTACT / FOOTER ============ */
+  .contact { text-align: center; padding-bottom: 40px; }
+  .contact h2 { font-family: var(--font-display); font-weight: 800; font-size: clamp(26px, 4.4vw, 44px); letter-spacing: -0.02em; margin-bottom: 16px; text-wrap: balance; }
+  .contact p { color: var(--ink-dim); max-width: 50ch; margin: 0 auto 32px; }
+  .contact-links { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; }
+  .contact-links a { font-family: var(--font-mono); font-size: 13.5px; padding: 12px 20px; border: 1px solid var(--line-strong); border-radius: 10px; color: var(--ink); transition: all .18s; }
+  .contact-links a:hover { border-color: var(--accent); color: var(--accent); transform: translateY(-2px); }
+  footer { border-top: 1px solid var(--line); padding: 30px 0; }
+  footer .wrap { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px; font-family: var(--font-mono); font-size: 11.5px; color: var(--ink-faint); letter-spacing: 0.06em; }
+
+  /* ============ REVEAL ============ */
+  .reveal { opacity: 0; transform: translateY(24px); transition: opacity .7s cubic-bezier(.2,.7,.3,1), transform .7s cubic-bezier(.2,.7,.3,1); }
+  .reveal.in { opacity: 1; transform: none; }
+  @media (prefers-reduced-motion: reduce) {
+    .reveal { opacity: 1; transform: none; transition: none; }
+    .bar, .bd-row .fill { transition: none; }
+  }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="wrap">
+    <a class="brand" href="#top"><span class="dot"></span><b>JUWON CHA</b><span>// CLIENT DEV</span></a>
+    <nav class="topnav">
+      <a href="#vanguard">Vanguard</a>
+      <a href="#systems">Systems</a>
+      <a href="#craft">Engineering</a>
+      <a href="#contact">Contact</a>
+      <button class="theme-btn" id="themeToggle" aria-label="테마 전환">◐ THEME</button>
+    </nav>
+  </div>
+</header>
+
+<main id="top">
+
+  <!-- HERO -->
+  <section class="hero">
+    <canvas id="heroCanvas" aria-hidden="true"></canvas>
+    <div class="hero-grid-fade"></div>
+    <div class="wrap">
+      <div class="hero-inner reticle">
+        <span class="eyebrow">PORTFOLIO — 2026</span>
+        <div class="namemark">차주원 · JUWON CHA</div>
+        <h1>게임의 <span class="hl">시스템</span>을 설계하고,<br />구현하고, 라이브에서 지켜냅니다.</h1>
+        <p class="lead">Unity 기반 모바일 타워디펜스 RPG <b>〈Wiggle Defender〉</b>의 클라이언트 개발자.
+        비동기 PvP 대전 모드부터 시즌·이벤트 메타, 라이브 대응, 성능 최적화까지 —
+        한 사람이 <b>시스템 단위</b>로 처음부터 끝까지 책임집니다.</p>
+        <div class="hero-meta">
+          <span class="chip"><span class="k">PROJECT</span> Wiggle Defender</span>
+          <span class="chip"><span class="k">STUDIO</span> TeamSparta</span>
+          <span class="chip"><span class="k">ROLE</span> Game Client Developer</span>
+          <span class="chip"><span class="k">PERIOD</span> 2026.01 – 07</span>
+        </div>
+        <div class="hero-cta">
+          <a class="btn btn-primary" href="#vanguard">대표 시스템 보기 →</a>
+          <a class="btn btn-ghost" href="#contact">연락하기</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- STATS -->
+  <section id="impact">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <span class="idx">01 / IMPACT</span>
+        <h2>6개월, 시스템 단위의 기여</h2>
+      </div>
+      <div class="stats reveal">
+        <div class="stat"><div class="num" data-count="1764">0</div><div class="lbl">Commits · 병합 제외</div></div>
+        <div class="stat"><div class="num" data-count="178" data-suffix="K">0</div><div class="lbl">순증 C# 라인 (+212K 추가)</div></div>
+        <div class="stat"><div class="num" data-count="12" data-suffix="+">0</div><div class="lbl">담당 대형 시스템</div></div>
+        <div class="stat"><div class="num" data-count="520">0</div><div class="lbl">신규 기능 커밋 (feat)</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURED: VANGUARD -->
+  <section id="vanguard">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <span class="idx">02 / FLAGSHIP</span>
+        <h2>대표 프로젝트</h2>
+      </div>
+      <div class="featured reveal">
+        <span class="feat-tag">◈ ASYNC PVP GAME MODE — 155 FILES</span>
+        <h3>뱅가드 (Vanguard)</h3>
+        <div class="subtitle">비동기 PvP 대전 모드 — 설계부터 라이브까지 단독 구현</div>
+        <p class="feat-body">
+          상대의 편성을 <b>고스트 클론</b>으로 불러와 양측 전투를 클라이언트에서 <b>이중 시뮬레이션</b>해 승패를 판정하는
+          비동기 PvP 모드. 시즌·랭킹·티어 메타, 칩/카드/모듈 성장 요소, 인게임 UI와 결과 연출, 서버 연동, 신규 유저 튜토리얼,
+          그리고 후반 프레임 저하를 잡는 성능 최적화까지 — 게임 모드 하나를 <b>수직 슬라이스 전체로</b> 책임졌습니다.
+        </p>
+        <div class="feat-cols">
+          <ul class="feat-list">
+            <li><span class="m">◢</span><span><b>듀얼 시뮬레이션 판정</b> — 승패를 클라 권위로 결정. 상대 전투 로직을 경량화하지 않고 동일 정밀도로 시뮬레이션해 결과 비대칭을 제거.</span></li>
+            <li><span class="m">◢</span><span><b>진영 격리 아키텍처</b> — 아군/적군이 풀을 공유하는 구조에서 <code>*FieldAware</code> 타게팅 헬퍼로 필드 간 간섭 차단.</span></li>
+            <li><span class="m">◢</span><span><b>칩 메타 시스템</b> — 진영별 효과 분리, 같은 효과 중복 방지, 크로스모드 누수 차단, 천장·NEW 뱃지까지 완결.</span></li>
+            <li><span class="m">◢</span><span><b>서버 연동 10종</b> — 시즌/랭킹/매치/보상 엔드포인트 + Firebase 저장. 듀얼 데드락·랭크 게이트 등 라이브 이슈 클라 대응.</span></li>
+            <li><span class="m">◢</span><span><b>성능 최적화</b> — 진영별 탐지 버킷, 무할당(alloc-free) 파사드, 오프스크린 컬링, 트윈 스로틀로 후반 프레임 확보.</span></li>
+          </ul>
+          <div class="feat-metrics">
+            <div class="fm"><div class="n">155</div><div class="l">C# 파일</div></div>
+            <div class="fm"><div class="n">10</div><div class="l">서버 엔드포인트</div></div>
+            <div class="fm"><div class="n">6종</div><div class="l">전용 재화 로직</div></div>
+            <div class="fm"><div class="n">E2E</div><div class="l">설계→라이브 단독</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SYSTEMS -->
+  <section id="systems">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <span class="idx">03 / CATALOG</span>
+        <h2>구축한 시스템</h2>
+      </div>
+      <p class="sec-sub reveal">라이브 서비스 게임을 굴리는 성장·이벤트·전투 시스템들. 각 항목은 신규 구현 또는 대규모 이식·재설계를 단독 담당했습니다.</p>
+      <div class="grid-sys">
+        <div class="card reveal"><span class="scope"><b>163</b> files</span><div class="sysid">SYS-01</div><h4>길드 레이드</h4><p>협동 보스 레이드 모드를 자매 프로젝트에서 이식·재설계. 컨벤션 전면 변환, Collider2D 재작성, 카드 선택·씬 복귀 플로우 복원.</p><div class="tags"><span>Co-op</span><span>Migration</span><span>Boss AI</span></div></div>
+        <div class="card reveal"><span class="scope"><b>55</b> files</span><div class="sysid">SYS-02</div><h4>칩 시스템</h4><p>유닛 강화 칩 메타. 데미지 배율 합연산 규칙, 진영 분리, 같은 효과 중복 방지, 신규 칩 효과 다수(처형/부스트 등) 설계.</p><div class="tags"><span>Meta</span><span>Damage Model</span></div></div>
+        <div class="card reveal"><span class="scope"><b>52</b> files</span><div class="sysid">SYS-03</div><h4>카드 시스템</h4><p>유닛 강화 카드/조합 효과. 랭크 반영, 카드 선택 완료 처리 통합, 풀 재사용 시 초기화 누락 방지 구조 개선.</p><div class="tags"><span>Progression</span><span>Combo</span></div></div>
+        <div class="card reveal"><span class="scope"><b>16</b> files</span><div class="sysid">SYS-04</div><h4>복귀 이벤트</h4><p>미접속 유저 복귀 이벤트 백본부터 UI까지. 서버 기반 복귀 판정, 미션·출석·마일스톤, 스킨 자동 착용, 퍼널 로그.</p><div class="tags"><span>Live-Ops</span><span>Retention</span></div></div>
+        <div class="card reveal"><div class="sysid">SYS-05</div><h4>배틀패스</h4><p>시즌 배틀패스 프레임워크. 칩 선택권 슬롯, 보상 팝업 아이콘, 등급 프레임 표시 등 보상 트랙 구현.</p><div class="tags"><span>Season Pass</span></div></div>
+        <div class="card reveal"><div class="sysid">SYS-06</div><h4>신병 훈련 / 온보딩</h4><p>신규 유저 튜토리얼·훈련 흐름과 복귀 이벤트 연계. 정예 스테이지 미션, 진행도 추적.</p><div class="tags"><span>Onboarding</span><span>Tutorial</span></div></div>
+        <div class="card reveal"><div class="sysid">SYS-07</div><h4>스네이크 전투</h4><p>경로를 따라 이동하는 스네이크형 적 시스템. 세그먼트 배치 중앙화, 바디 처치·전송 로직, 50마디+ 피격 경로 최적화.</p><div class="tags"><span>Enemy AI</span><span>Perf</span></div></div>
+        <div class="card reveal"><div class="sysid">SYS-08</div><h4>이벤트/성장 다수</h4><p>버거 피라미드, 호드 던전, 특가 상점 로테이션, 룰렛, 복귀 마일스톤 등 라이브 이벤트·성장 콘텐츠 폭넓게 담당.</p><div class="tags"><span>Horde</span><span>Shop</span><span>Events</span></div></div>
+        <div class="card reveal"><div class="sysid">SYS-09</div><h4>세이브 · 서버 인프라</h4><p>SaveDataManager 타입 등록 파이프라인, ServerManager, 매니저 초기화 병목 개선으로 로딩 속도 최적화.</p><div class="tags"><span>Persistence</span><span>Infra</span></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ENGINEERING CRAFT -->
+  <section id="craft">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <span class="idx">04 / ENGINEERING</span>
+        <h2>엔지니어링 역량</h2>
+      </div>
+      <div class="craft">
+        <div class="craft-col reveal">
+          <h4><span class="tick"></span>성능 최적화</h4>
+          <div class="kick">// 18 PERF COMMITS</div>
+          <ul>
+            <li>공격/피격 경로의 <code>LINQ</code>·GC 할당 제거, 매니저 참조 캐싱</li>
+            <li>적 탐지를 <b>무할당 파사드</b> + 진영별 버킷으로 전환</li>
+            <li>화면 밖 데미지 텍스트 <b>컬링</b>, 스네이크 피격 트윈 스로틀</li>
+            <li>세그먼트 배치 <code>LateUpdate</code> 중앙화, 투사체 풀링</li>
+            <li>매니저 초기화 병목 개선으로 로딩 속도 단축</li>
+          </ul>
+        </div>
+        <div class="craft-col reveal">
+          <h4><span class="tick"></span>아키텍처</h4>
+          <div class="kick">// PATTERNS &amp; CONVENTIONS</div>
+          <ul>
+            <li>매니저 <b>서비스 로케이터</b> + 정적 <b>이벤트 버스</b> 기반 결합도 관리</li>
+            <li><code>UniTask</code> 비동기, <code>async void</code> 금지 규칙 준수</li>
+            <li>대형 컨트롤러 <b>partial class</b> 분할로 책임 분리</li>
+            <li>카드 효과를 <code>struct</code>로 통합해 풀 재사용 초기화 누락 방지</li>
+            <li>죽은 코드·미사용 잔재 제거, 네이밍 컨벤션 정리</li>
+          </ul>
+        </div>
+        <div class="craft-col reveal">
+          <h4><span class="tick"></span>라이브 운영</h4>
+          <div class="kick">// 743 FIX · 21 HOTFIX</div>
+          <ul>
+            <li>SIGSEGV·재시작 레이스 등 <b>크래시 대응</b> 및 안정화</li>
+            <li>자매 프로젝트와 <b>시스템 sync</b> — 이식·회귀 방지 코드 보존</li>
+            <li>치트/QA 커맨드, 타임머신 등 <b>검증 도구</b> 정비</li>
+            <li>서버 데드락·랭크 게이트 등 <b>클라 측 방어 로직</b> 구현</li>
+            <li>분석 이벤트·퍼널 로그 배선으로 지표 확보</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ACTIVITY -->
+  <section id="activity">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <span class="idx">05 / ACTIVITY</span>
+        <h2>작업 로그</h2>
+      </div>
+      <div class="activity">
+        <div class="chart-panel reveal">
+          <div class="cap"><span>MONTHLY COMMITS · 2026</span><span>PEAK 395</span></div>
+          <div class="bars" id="bars">
+            <div class="bar-col"><span class="v">277</span><div class="bar" data-h="70"></div><span class="mo">JAN</span></div>
+            <div class="bar-col"><span class="v">252</span><div class="bar" data-h="64"></div><span class="mo">FEB</span></div>
+            <div class="bar-col"><span class="v">242</span><div class="bar" data-h="61"></div><span class="mo">MAR</span></div>
+            <div class="bar-col"><span class="v">309</span><div class="bar" data-h="78"></div><span class="mo">APR</span></div>
+            <div class="bar-col"><span class="v">192</span><div class="bar" data-h="49"></div><span class="mo">MAY</span></div>
+            <div class="bar-col"><span class="v">395</span><div class="bar" data-h="100"></div><span class="mo">JUN</span></div>
+            <div class="bar-col"><span class="v">97</span><div class="bar" data-h="25"></div><span class="mo">JUL</span></div>
+          </div>
+        </div>
+        <div class="breakdown reveal">
+          <div class="cap">COMMIT TYPE BREAKDOWN</div>
+          <div class="bd-row"><span class="t">fix</span><div class="track"><div class="fill" data-w="100" style="background:var(--crit)"></div></div><span class="c">743</span></div>
+          <div class="bd-row"><span class="t">feat</span><div class="track"><div class="fill" data-w="70" style="background:var(--accent)"></div></div><span class="c">520</span></div>
+          <div class="bd-row"><span class="t">chore</span><div class="track"><div class="fill" data-w="49" style="background:var(--ink-faint)"></div></div><span class="c">364</span></div>
+          <div class="bd-row"><span class="t">refactor</span><div class="track"><div class="fill" data-w="9" style="background:var(--cyan)"></div></div><span class="c">59</span></div>
+          <div class="bd-row"><span class="t">perf</span><div class="track"><div class="fill" data-w="4" style="background:var(--good)"></div></div><span class="c">18</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- STACK -->
+  <section id="stack">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <span class="idx">06 / STACK</span>
+        <h2>기술 스택</h2>
+      </div>
+      <div class="stack-grid reveal">
+        <span class="s"><b>Unity</b> 6000.2 LTS</span>
+        <span class="s"><b>C#</b></span>
+        <span class="s"><b>UniTask</b> 비동기</span>
+        <span class="s"><b>DOTween</b></span>
+        <span class="s"><b>Addressables</b></span>
+        <span class="s"><b>Firebase</b> 저장/원격</span>
+        <span class="s"><b>TextMeshPro</b></span>
+        <span class="s"><b>Google Sheets</b> 데이터 파이프라인</span>
+        <span class="s"><b>Object Pooling</b></span>
+        <span class="s"><b>Git</b> 멀티 프로젝트 sync</span>
+        <span class="s"><b>2D</b> Collider / Physics</span>
+        <span class="s"><b>Analytics</b> 퍼널 로그</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- CONTACT -->
+  <section id="contact" class="contact">
+    <div class="wrap reveal">
+      <span class="eyebrow" style="justify-content:center;">07 / CONTACT</span>
+      <h2 style="margin-top:18px;">함께 만들 시스템이 있다면</h2>
+      <p>게임 클라이언트 시스템 설계·구현, 라이브 운영에 대해 이야기 나누고 싶습니다.</p>
+      <div class="contact-links">
+        <!-- 아래 링크의 값을 본인 정보로 채우세요 -->
+        <a href="mailto:your@email.com">✉ your@email.com</a>
+        <a href="https://github.com/your-handle" target="_blank" rel="noopener">⌥ GitHub</a>
+        <a href="https://your-blog.com" target="_blank" rel="noopener">✍ Blog</a>
+        <a href="#">in LinkedIn</a>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>© 2026 JUWON CHA — GAME CLIENT DEVELOPER</span>
+    <span>WIGGLE DEFENDER · TEAMSPARTA</span>
+  </div>
+</footer>
+
+<script>
+(function () {
+  var reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /* ---- Theme toggle ---- */
+  var root = document.documentElement;
+  var btn = document.getElementById("themeToggle");
+  try {
+    var saved = localStorage.getItem("wd-theme");
+    if (saved) root.setAttribute("data-theme", saved);
+  } catch (e) {}
+  btn.addEventListener("click", function () {
+    var cur = root.getAttribute("data-theme") === "light" ? "light" : "dark";
+    var next = cur === "light" ? "dark" : "light";
+    root.setAttribute("data-theme", next);
+    try { localStorage.setItem("wd-theme", next); } catch (e) {}
+  });
+
+  /* ---- Reveal on scroll ---- */
+  var revs = document.querySelectorAll(".reveal");
+  if (reduced || !("IntersectionObserver" in window)) {
+    revs.forEach(function (r) { r.classList.add("in"); });
+  } else {
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) {
+        if (en.isIntersecting) { en.target.classList.add("in"); io.unobserve(en.target); }
+      });
+    }, { threshold: 0.14 });
+    revs.forEach(function (r) { io.observe(r); });
+  }
+
+  /* ---- Count-up ---- */
+  function animateCount(el) {
+    var target = parseFloat(el.getAttribute("data-count"));
+    var suffix = el.getAttribute("data-suffix") || "";
+    if (reduced) { el.innerHTML = target.toLocaleString() + (suffix ? '<span class="suf">' + suffix + "</span>" : ""); return; }
+    var dur = 1300, start = null;
+    function step(ts) {
+      if (!start) start = ts;
+      var p = Math.min((ts - start) / dur, 1);
+      var eased = 1 - Math.pow(1 - p, 3);
+      var val = Math.round(target * eased);
+      el.innerHTML = val.toLocaleString() + (suffix ? '<span class="suf">' + suffix + "</span>" : "");
+      if (p < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
+  var counts = document.querySelectorAll("[data-count]");
+  if (!("IntersectionObserver" in window)) {
+    counts.forEach(animateCount);
+  } else {
+    var cio = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) { if (en.isIntersecting) { animateCount(en.target); cio.unobserve(en.target); } });
+    }, { threshold: 0.5 });
+    counts.forEach(function (c) { cio.observe(c); });
+  }
+
+  /* ---- Bars + breakdown fills ---- */
+  function fillBars() {
+    document.querySelectorAll(".bar").forEach(function (b) { b.style.height = (b.getAttribute("data-h")) + "%"; });
+    document.querySelectorAll(".bd-row .fill").forEach(function (f) { f.style.width = (f.getAttribute("data-w")) + "%"; });
+  }
+  var actSec = document.getElementById("activity");
+  if (reduced || !("IntersectionObserver" in window)) {
+    fillBars();
+  } else {
+    var aio = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) { if (en.isIntersecting) { fillBars(); aio.unobserve(en.target); } });
+    }, { threshold: 0.3 });
+    aio.observe(actSec);
+  }
+
+  /* ---- Hero canvas: snake waves along lanes ---- */
+  var canvas = document.getElementById("heroCanvas");
+  if (canvas && canvas.getContext) {
+    var ctx = canvas.getContext("2d");
+    var W, H, dpr;
+    function css(v) { return getComputedStyle(root).getPropertyValue(v).trim(); }
+    function resize() {
+      dpr = Math.min(window.devicePixelRatio || 1, 2);
+      W = canvas.clientWidth; H = canvas.clientHeight;
+      canvas.width = W * dpr; canvas.height = H * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+    // lanes: each a horizontal sine path carrying a segmented "snake"
+    var lanes = [];
+    function buildLanes() {
+      lanes = [];
+      var n = W < 640 ? 3 : 5;
+      for (var i = 0; i < n; i++) {
+        lanes.push({
+          y: (H / (n + 1)) * (i + 1) + (i % 2 ? 12 : -12),
+          amp: 14 + (i % 3) * 8,
+          wl: 220 + (i % 3) * 90,
+          speed: 0.18 + (i % 3) * 0.05,
+          phase: i * 1.3,
+          seg: 12 + (i % 4) * 3,
+          offset: (i * 0.27) % 1
+        });
+      }
+    }
+    function drawGrid() {
+      var line = css("--line-strong") || "rgba(126,164,204,0.28)";
+      ctx.strokeStyle = line; ctx.lineWidth = 1; ctx.globalAlpha = 0.5;
+      var gap = 64;
+      for (var x = 0; x <= W; x += gap) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
+      for (var y = 0; y <= H; y += gap) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
+      ctx.globalAlpha = 1;
+    }
+    function laneYAt(l, x, t) {
+      return l.y + Math.sin((x / l.wl) + l.phase + t * l.speed) * l.amp;
+    }
+    var accent, cyan;
+    function refreshColors() { accent = css("--accent") || "#f5b642"; cyan = css("--cyan") || "#43d9c4"; }
+    function render(t) {
+      ctx.clearRect(0, 0, W, H);
+      drawGrid();
+      var tt = t * 0.001;
+      lanes.forEach(function (l, idx) {
+        // travel position of the snake head (loops across width)
+        var travel = ((tt * (28 + idx * 6) + l.offset * (W + 300)) % (W + 300)) - 150;
+        var col = idx % 2 ? cyan : accent;
+        for (var s = 0; s < l.seg; s++) {
+          var x = travel - s * 16;
+          if (x < -20 || x > W + 20) continue;
+          var y = laneYAt(l, x, tt);
+          var r = (s === 0 ? 4.5 : 3.2 * (1 - s / (l.seg + 6)));
+          if (r < 0.6) r = 0.6;
+          ctx.beginPath();
+          ctx.arc(x, y, r, 0, Math.PI * 2);
+          ctx.fillStyle = col;
+          ctx.globalAlpha = (s === 0 ? 0.85 : 0.5 * (1 - s / (l.seg + 3)));
+          ctx.fill();
+        }
+      });
+      ctx.globalAlpha = 1;
+      if (!reduced) rafId = requestAnimationFrame(render);
+    }
+    var rafId;
+    function init() { resize(); buildLanes(); refreshColors(); if (reduced) { render(4000); } else { render(0); } }
+    init();
+    var rt;
+    window.addEventListener("resize", function () {
+      clearTimeout(rt);
+      rt = setTimeout(function () { if (rafId) cancelAnimationFrame(rafId); init(); }, 180);
+    });
+    // update colors if theme toggles
+    btn.addEventListener("click", function () { setTimeout(refreshColors, 30); });
+  }
+})();
+</script>
+</body>
+</html>
