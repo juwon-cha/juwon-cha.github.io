@@ -85,6 +85,8 @@
     font-size: 16px;
     -webkit-font-smoothing: antialiased;
     overflow-x: hidden;
+    word-break: keep-all;
+    overflow-wrap: break-word;
   }
   a { color: inherit; text-decoration: none; }
   ::selection { background: var(--accent); color: var(--ground); }
@@ -381,7 +383,7 @@
           <summary>기술 상세 보기</summary>
           <ul class="plain">
             <li><b>Live/Record Clone 매칭</b> — 실유저 스냅샷(LIVE)과 기록 고스트(RECORD)를 클론 스폰해 3라운드(2선승) 대전.<br />자기 클론과 매칭되면 닉네임 위장·편성 셔플로 노출 방지.</li>
-            <li><b>랜덤 요소 통제</b> — 서버 발급 match_seed로 전용 RNG를 격리.<br />런타임별 편차가 없는 FNV-1a 해시로 시즌 카드 선정을 전 클라이언트 동일하게 보장.</li>
+            <li><b>랜덤 요소 통제</b> — 카드 추첨이 뽑을 때마다 달라지면 같은 매치의 결과가 바뀌는 문제.<br />서버가 매치마다 발급하는 시드로 추첨 전용 Random을 만들어, 같은 매치는 항상 같은 결과가 나오게 함.<br />시즌 카드 선정은 문자열 해시(FNV-1a)를 시드로 사용 — 기기가 달라도, 재설치해도 모든 유저가 같은 카드를 계산.</li>
             <li><b>진영 격리</b> — 상대 전장을 월드 오프셋으로 분리.<br />진영별 버킷 기반 무할당(alloc-free) 타게팅 헬퍼로 교차 간섭 차단.</li>
             <li><b>정적 검증기</b> — 데미지 계산 호출의 진영 인자 누락을 소스 스캔으로 검출.<br />에디터 메뉴와 CI 종료코드 연동으로 격리 위반이 빌드를 통과하지 못하게 설계.</li>
             <li><b>서버 연동 10종</b> — 시즌 진입/리셋, 편성 저장, 매칭·결과 제출, 랭킹, 듀얼 4종.<br />서버 프로그래머와 DTO 스펙 협의.</li>
