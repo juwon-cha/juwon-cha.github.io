@@ -323,6 +323,7 @@
       <a href="#strength">Strength</a>
       <a href="#systems">Live Ops</a>
       <a href="#porting">Porting</a>
+      <a href="#build">Build</a>
       <a href="#projects">Projects</a>
       <a href="#contact">Contact</a>
       <button class="theme-btn" id="themeToggle" aria-label="테마 전환">◐ THEME</button>
@@ -511,11 +512,38 @@
     </div>
   </section>
 
+  <!-- BUILD & RELEASE -->
+  <section id="build">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <span class="idx">05 / BUILD &amp; RELEASE</span>
+        <h2>빌드 · 배포 운영</h2>
+      </div>
+      <p class="sec-sub reveal">빌드 파이프라인은 시니어가 구축했고, 저는 그 위에서 빌드·배포를 운영하며<br />Addressables 전환·폴백 로딩 구조와 PAD 에셋팩 구성을 직접 작업했습니다.</p>
+      <div class="featured reveal">
+        <ul class="feat-list">
+          <li><span class="m">◢</span><span><b>리소스 파이프라인</b> — Resources → Addressables 전환(리소스 3,600여 개)과<br />PAD install-time 에셋팩 구성을 직접 작업.</span></li>
+          <li><span class="m">◢</span><span><b>CI/CD 운영</b> — Jenkins 파이프라인 위에서 DEV·라이브 환경별 AOS·iOS 빌드 관리, 양대 마켓 배포.</span></li>
+          <li><span class="m">◢</span><span><b>배포 후 대응</b> — Crashlytics 크래시 확인과 라이브 이슈 대응.</span></li>
+        </ul>
+        <details class="deep">
+          <summary>기술 상세 보기</summary>
+          <ul class="plain">
+            <li><b>어드레서블 전환</b> — Resources.Load 호출을 Addressables 로드로 전환.<br />확장자(.PNG/.mp3)·대소문자 폴백으로 전환기 로드 실패 이슈 수정.</li>
+            <li><b>PAD 설정</b> — 어드레서블 그룹을 install-time 에셋팩으로 구성해 AAB 배포.<br />PAD 빌드 설정 오류, PAD 환경 언어 설정 로드 이슈 수정.</li>
+            <li><b>빌드 운영</b> — DEV·라이브 스크립팅 심볼 분리, 버전코드 관리 흐름 운영.<br />빌드 실패 시 exit code·빌드 리포트로 원인 확인. 파이프라인 코드는 시니어 작성.</li>
+            <li><b>배포 후 대응</b> — Crashlytics 로그 기반 라이브 이슈 수정.<br />파괴된 오브젝트 접근(MissingReferenceException)·DOTween 트윈 수명 이슈.</li>
+          </ul>
+        </details>
+      </div>
+    </div>
+  </section>
+
   <!-- EARLIER PROJECTS -->
   <section id="projects">
     <div class="wrap">
       <div class="sec-head reveal">
-        <span class="idx">05 / EARLIER PROJECTS</span>
+        <span class="idx">06 / EARLIER PROJECTS</span>
         <h2>이전 프로젝트</h2>
       </div>
       <p class="sec-sub reveal">인턴 이전의 개인·팀 프로젝트입니다.<br />
@@ -533,7 +561,7 @@
   <section id="stack">
     <div class="wrap">
       <div class="sec-head reveal">
-        <span class="idx">06 / STACK</span>
+        <span class="idx">07 / STACK</span>
         <h2>기술 스택</h2>
       </div>
       <div class="stack-grid reveal">
@@ -547,6 +575,10 @@
         <span class="s"><b>MMP</b> (Airbridge)</span>
         <span class="s"><b>Google Sheets</b> 데이터 파이프라인</span>
         <span class="s"><b>Firebase</b></span>
+        <span class="s"><b>CI/CD</b> (Jenkins 운영)</span>
+        <span class="s"><b>Play Asset Delivery</b></span>
+        <span class="s"><b>Crashlytics</b></span>
+        <span class="s"><b>AppLovin MAX</b></span>
         <span class="s"><b>Claude</b> 에이전트 워크플로우</span>
       </div>
     </div>
@@ -555,7 +587,7 @@
   <!-- CONTACT -->
   <section id="contact" class="contact">
     <div class="wrap reveal">
-      <span class="eyebrow" style="justify-content:center;">07 / CONTACT</span>
+      <span class="eyebrow" style="justify-content:center;">08 / CONTACT</span>
       <h2 style="margin-top:18px;">함께 만들 시스템이 있다면</h2>
       <p>라이브 서비스에서 배운 것들을 다음 팀에서 이어가고 싶습니다.<br />
       편하게 연락 주세요.</p>
